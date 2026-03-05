@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>JPLYStore Admin Pro - Login Seguro</title>
+    <style>
+        :root {
+            --primary: #3d5afe;
+            --dark: #1a237e;
+            --bg: #f4f7f6;
+            --danger: #ff1744;
+            --success: #00e676;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* UI Elements */
+        h2,
+        h3 {
+            margin-top: 0;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: black;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .panel {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* PANTALLA DE LOGIN */
+        #login-screen {
+            width: 350px;
+            text-align: center;
+        }
+
+        #app-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Oculto por defecto */
+
+        /* Layout Main */
+        .sidebar {
+            width: 280px;
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: white;
+            border-left: 4px solid var(--primary);
+        }
+
+        .card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .card-actions button {
+            margin: 0;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-box {
+            flex: 1;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            margin: 0;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="login-screen" class="panel">
+        <h2>🔒 Acceso JPLYStore</h2>
+        <p>Introduce la ApiKey para continuar</p>
+        <input type="password" id="api-key-input" placeholder="ApiKey...">
+        <button onclick="iniciarSesion()">Entrar</button>
+        <p id="login-error" style="color: red; display: none; font-size: 0.9em;">ApiKey incorrecta o servidor no
+            disponible.</p>
+    </div>
+
+    <div id="app-content">
+        <div class="sidebar">
+            <h2>Filtros y Consultas</h2>
+            <button onclick="cargarDatos('')">Listar Todos (GET)</button>
+            <hr style="border-color: #3f51b5; margin: 15px 0;">
+            <h3>Consultas Específicas</h3>
+            <button onclick="cargarDatos('activos')">Sólo Activos (A-Z)</button>
+            <button onclick="cargarDatos('stock-bajo')">Stock Bajo (<10)< /button>
+                    <button onclick="cargarDatos('sin-foto')">Sin Imagen URL</button>
+                    <button onclick="cargarDatos('caros')">Más Caros (>100€)</button>
+                    <button onclick="cargarDatos('recientes')">Mes Reciente</button>
+                    <hr style="border-color: #3f51b5; margin: 15px 0;">
+                    <h3>Filtro por Rango (Stock)</h3>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="minStock" placeholder="Min" value="0">
+                        <input type="number" id="maxStock" placeholder="Max" value="50">
+                    </div>
+                    <button onclick="buscarPorRango()">Buscar Rango</button>
+        </div>
+
+        <div class="main">
+            <div class="stats-container" id="resumen-stats">
+                <div class="stat-box">Total<h3 id="stat-total">0</h3>
+                </div>
+                <div class="stat-box">Valor Inventario<h3 id="stat-valor">0€</h3>
+                </div>
+                <div class="stat-box">Inactivos<h3 id="stat-inactivos">0</h3>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 20px;">
+                <div class="panel" style="flex: 1;">
+                    <h3>Buscar Producto</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="busqueda" placeholder="Nombre a buscar...">
+                        <button onclick="buscarPorNombre()" style="width: auto;">Buscar</button>
+                    </div>
+                </div>
+
+                <div class="panel" style="flex: 2;">
+                    <h3 id="form-titulo">Añadir Nuevo Producto</h3>
+                    <input type="hidden" id="prod-id" value="0">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" id="prod-nombre" placeholder="Nombre">
+                        <input type="number" id="prod-precio" placeholder="Precio">
+                        <input type="number" id="prod-stock" placeholder="Stock">
+                        <input type="text" id="prod-img" placeholder="URL de la Imagen">
+                        <textarea id="prod-desc" placeholder="Descripción"
+                            style="grid-column: span 2; height: 60px;"></textarea>
+                        <label style="grid-column: span 2;"><input type="checkbox" id="prod-activo" checked> Producto
+                            Activo</label>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn-success" onclick="guardar()">Guardar</button>
+                        <button style="background: #999;" onclick="limpiarForm()">Cancelar Edición</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex: 1; overflow-y: auto;">
+                <h3 id="lista-titulo">Resultados</h3>
+                <div id="catalogo" class="grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PON AQUÍ TU URL PÚBLICA DE RENDER
+        const API_URL = 'https://ad-productapi-net8.onrender.com/api/Productos';
+        let currentApiKey = '';
+
+        function getHeaders() {
+            return { 'X-Api-Key': currentApiKey, 'Content-Type': 'application/json' };
+        }
+
+        // --- LÓGICA DE LOGIN ---
+        async function iniciarSesion() {
+            const inputKey = document.getElementById('api-key-input').value;
+            if (!inputKey) return;
+
+            document.getElementById('login-error').style.display = 'none';
+
+            try {
+                // Hacemos una petición de prueba al endpoint principal
+                const res = await fetch(API_URL, { headers: { 'X-Api-Key': inputKey } });
+
+                if (res.ok) {
+                    // Si el código es 200, la clave es válida. Ocultamos login y mostramos app.
+                    currentApiKey = inputKey;
+                    document.body.style.justifyContent = 'flex-start';
+                    document.body.style.alignItems = 'stretch';
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'flex';
+
+                    // Cargamos los datos iniciales
+                    cargarDatos('');
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('login-error').innerText = "Error de red. ¿Está encendido el servidor?";
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        // --- MÉTODOS GET (LECTURA Y BÚSQUEDA) ---
+        async function cargarDatos(ruta) {
+            document.getElementById('lista-titulo').innerText = ruta === '' ? 'Todos los Productos' : `Filtro: ${ruta}`;
+            const url = ruta ? `${API_URL}/${ruta}` : API_URL;
+            await fetchAndRender(url);
+            actualizarResumen();
+        }
+
+        async function buscarPorNombre() {
+            const query = document.getElementById('busqueda').value;
+            await fetchAndRender(`${API_URL}?nombre=${query}`);
+        }
+
+        async function buscarPorRango() {
+            const min = document.getElementById('minStock').value;
+            const max = document.getElementById('maxStock').value;
+            await fetchAndRender(`${API_URL}/inventario-rango?min=${min}&max=${max}`);
+        }
+
+        async function actualizarResumen() {
+            try {
+                const res = await fetch(`${API_URL}/resumen`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('stat-total').innerText = data.totalProductos;
+                    document.getElementById('stat-valor').innerText = data.valorTotalDolares.toFixed(2) + '€';
+                    document.getElementById('stat-inactivos').innerText = data.productosInactivos;
+                }
+            } catch (e) { console.error("Error al cargar resumen", e); }
+        }
+
+        // --- MÉTODOS CRUD (POST, PUT, DELETE, GET BY ID) ---
+        async function guardar() {
+            const id = parseInt(document.getElementById('prod-id').value);
+            const producto = {
+                id: id,
+                nombre: document.getElementById('prod-nombre').value,
+                descripcion: document.getElementById('prod-desc').value,
+                precio: parseFloat(document.getElementById('prod-precio').value),
+                stock: parseInt(document.getElementById('prod-stock').value),
+                imagenUrl: document.getElementById('prod-img').value,
+                estaActivo: document.getElementById('prod-activo').checked,
+                fechaIngreso: new Date().toISOString()
+            };
+
+            const esActualizacion = id > 0;
+            const url = esActualizacion ? `${API_URL}/${id}` : API_URL;
+            const method = esActualizacion ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, { method: method, headers: getHeaders(), body: JSON.stringify(producto) });
+                if (!res.ok) throw new Error(await res.text());
+
+                limpiarForm();
+                cargarDatos('');
+            } catch (e) { alert('Error al guardar: ' + e.message); }
+        }
+
+        async function eliminar(id) {
+            if (!confirm('¿Seguro que deseas eliminar el ID ' + id + '?')) return;
+            try {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: getHeaders() });
+                cargarDatos('');
+            } catch (e) { alert('Error al eliminar'); }
+        }
+
+        async function editar(id) {
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { headers: getHeaders() });
+                const p = await res.json();
+
+                document.getElementById('form-titulo').innerText = `Editar Producto #${p.id}`;
+                document.getElementById('prod-id').value = p.id;
+                document.getElementById('prod-nombre').value = p.nombre;
+                document.getElementById('prod-desc').value = p.descripcion;
+                document.getElementById('prod-precio').value = p.precio;
+                document.getElementById('prod-stock').value = p.stock;
+                document.getElementById('prod-img').value = p.imagenUrl;
+                document.getElementById('prod-activo').checked = p.estaActivo;
+            } catch (e) { alert('Error al obtener producto'); }
+        }
+
+        // --- UTILIDADES ---
+        function limpiarForm() {
+            document.getElementById('form-titulo').innerText = 'Añadir Nuevo Producto';
+            document.getElementById('prod-id').value = '0';
+            document.getElementById('prod-nombre').value = '';
+            document.getElementById('prod-desc').value = '';
+            document.getElementById('prod-precio').value = '';
+            document.getElementById('prod-stock').value = '';
+            document.getElementById('prod-img').value = '';
+            document.getElementById('prod-activo').checked = true;
+        }
+
+        async function fetchAndRender(url) {
+            const contenedor = document.getElementById('catalogo');
+            contenedor.innerHTML = '<p>Cargando...</p>';
+            try {
+                const res = await fetch(url, { headers: getHeaders() });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        alert("La sesión caducó o la clave es inválida.");
+                        location.reload(); // Recarga la página para volver al login
+                        return;
+                    }
+                    throw new Error("Error en petición");
+                }
+                const data = await res.json();
+
+                contenedor.innerHTML = '';
+                data.forEach(p => {
+                    const imgTag = p.imagenUrl ? `<img src="${p.imagenUrl}" alt="img">` : '<div style="height:150px; background:#ddd; display:flex; align-items:center; justify-content:center;">Sin Imagen</div>';
+                    contenedor.innerHTML += `
+                    <div class="card">
+                        ${imgTag}
+                        <strong>${p.nombre} (ID: ${p.id})</strong>
+                        <div style="color: ${p.estaActivo ? 'green' : 'red'}; font-size: 0.8em">${p.estaActivo ? 'ACTIVO' : 'INACTIVO'}</div>
+                        <div>Precio: ${p.precio}€ | Stock: ${p.stock}</div>
+                        <div class="card-actions">
+                            <button onclick="editar(${p.id})">✏️ Editar</button>
+                            <button class="btn-danger" onclick="eliminar(${p.id})">🗑️ Borrar</button>
+                        </div>
+                    </div>
+                `;
+                });
+            } catch (e) { contenedor.innerHTML = `<p style="color:red">Error. (${e.message})</p>`; }
+        }
+    </script>
+</body>
+
+</html>
